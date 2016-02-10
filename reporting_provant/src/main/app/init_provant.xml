@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting"
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp" xmlns:quartz="http://www.mulesoft.org/schema/mule/quartz"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.mulesoft.org/schema/mule/quartz http://www.mulesoft.org/schema/mule/quartz/current/mule-quartz.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/current/mule-amqp.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+	<quartz:connector name="Quartz" validateConnections="true" doc:name="Quartz">
+    	<receiver-threading-profile maxThreadsActive="1"/>
+    </quartz:connector>
+    
+    <flow name="init_rtvFlow" initialState="stopped">
+        <quartz:inbound-endpoint jobName="CustomJob" repeatInterval="${request.interval}" responseTimeout="10000" doc:name="Quartz" connector-ref="Quartz">
+        	<quartz:event-generator-job/>
+        </quartz:inbound-endpoint>
+        <set-variable variableName="endDate" value="#[server.dateTime]" doc:name="Set endDate"/>
+        <set-variable variableName="startDate" value="#[flowVars.endDate.plusHours('${request.hoursinterval}')]" doc:name="Set startDate"/>
+ 
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+
+    "correlation_id": "testrequest1",
+
+    "requestor": p('request.requestor'),
+
+    "tenant": p('request.tenant'),
+
+    "datetime_from": flowVars.startDate as :string {format: "yyyy-MM-dd'T'HH:mm:ss"},
+    
+    "datetime_to": flowVars.endDate as :string {format: "yyyy-MM-dd'T'HH:mm:ss"}
+
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <byte-array-to-string-transformer doc:name="Byte Array to String"/>
+        
+        <amqp:outbound-endpoint exchangeName="${rabbit.exchangename}" responseTimeout="10000" exchange-pattern="request-response" connector-ref="AMQP_0_9_Connector" doc:name="AMQP-0-9"/>
+    </flow>
+</mule>

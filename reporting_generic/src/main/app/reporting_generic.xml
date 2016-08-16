@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:mulexml="http://www.mulesoft.org/schema/mule/xml" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:mulexml="http://www.mulesoft.org/schema/mule/xml" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
 	xmlns:spring="http://www.springframework.org/schema/beans" 
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
@@ -11,17 +11,18 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
 http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/current/mule-xml.xsd
 http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
-http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
     <flow name="ingest_reportingFlow">
     
-   		<amqp:inbound-endpoint  queueName="${rabbit.requestqueue}"
+   		<amqp:inbound-endpoint  queueName="${rabbit.requests_queuename}"
 								queueDurable="true"
-								queueExclusive="false"
-								queueAutoDelete="false"
-								connector-ref="AMQP_0_9_Connector" />
+								
+								
+								connector-ref="AMQP_0_9_Connector" doc:name="AMQP-0-9" responseTimeout="10000"/>
         <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
-        <flow-ref name="initialize_variables" doc:name="Flow Reference"/>
-        <dw:transform-message doc:name="Transform Message">
+        <flow-ref name="initialize_variables" doc:name="initialize_variables"/>
+        <dw:transform-message doc:name="Transform startDate and endDate to mediahaven date format">
             <dw:input-variable doc:sample="json.json" variableName="dateFrom"/>
             <dw:input-variable doc:sample="json_1.json" variableName="dateTo"/>
             <dw:set-payload><![CDATA[%dw 1.0
@@ -38,47 +39,50 @@ using (
         </dw:transform-message>
         <set-variable variableName="startDate" value="#[payload.startDate]" doc:name="Set startDate"/>
         <set-variable variableName="endDate" value="#[payload.endDate]" doc:name="Set endDate"/>
-        <http:request config-ref="HTTP_Request_Configuration" path="resources/media/" method="GET" doc:name="HTTP">
+        <http:request config-ref="HTTP_Request_Configuration" path="resources/media/" method="GET" doc:name="Request Mediahaven">
             <http:request-builder>
                 <http:query-param paramName="q" value="#[&quot;+(MediaObjectArchiveDate:[&quot; + flowVars.startDate + &quot; TO &quot; + flowVars.endDate + &quot;] AND dtag:\&quot;root&gt;organisation&gt;&quot; + flowVars.tenant + &quot;\&quot; AND MediaObjectFragmentisiningestspace:* AND -dtag:\&quot;root&gt;organisation&gt;viaa_failures\&quot; AND -dtag:\&quot;root&gt;organisation&gt;viaa\&quot; AND -dtag:\&quot;root&gt;organisation&gt;tempvrt\&quot;)&quot;]"/>
                 <http:query-param paramName="nrOfResults" value="1"/>
                 <http:query-param paramName="startindex" value="0"/>
-                <http:header headerName="Accept" value="application/xml"/>
-                <http:header headerName="Authorization" value="${http.authorization}"/>
+                <http:header headerName="Authorization" value="#[flowVars.authKey]"/>
             </http:request-builder>
         </http:request>
-        <mulexml:dom-to-xml-transformer doc:name="DOM to XML"/>
-        <set-variable variableName="totalCount" value="#[xpath3(&quot;//totalNrOfResults/text()&quot;)]" doc:name="Set totalCount"/>
+        <json:json-to-object-transformer doc:name="JSON to Object"/>
+        <set-variable variableName="totalCount" value="payload.totalNrOfResults" doc:name="Set totalCount"/>
         <set-variable variableName="pageCount" value="#[(java.lang.Double) (flowVars.totalCount / '${page.size}')]" doc:name="Set pageCount"/>
         <set-variable variableName="roundedPageCount" value="#[(java.lang.Integer) java.lang.Math.ceil(flowVars.pageCount)]" doc:name="Set roundedPageCount"/>
         <set-variable variableName="array" value="#[new java.lang.String[flowVars.roundedPageCount]]" doc:name="Init array"/>
         <foreach collection="#[flowVars.array]" doc:name="For Each">
             <logger message="#[&quot;Counter: &quot; + flowVars.counter]" level="INFO" doc:name="Logger"/>
-            <http:request config-ref="HTTP_Request_Configuration" path="resources/media/" method="GET" doc:name="HTTP">
+            <http:request config-ref="HTTP_Request_Configuration" path="resources/media/" method="GET" doc:name="Get page">
             	<http:request-builder>
                     <http:query-param paramName="q" value="#[&quot;+(MediaObjectArchiveDate:[&quot; + flowVars.startDate + &quot; TO &quot; + flowVars.endDate + &quot;] AND dtag:\&quot;root&gt;organisation&gt;&quot; + flowVars.tenant + &quot;\&quot; AND MediaObjectFragmentisiningestspace:* AND -dtag:\&quot;root&gt;organisation&gt;viaa_failures\&quot; AND -dtag:\&quot;root&gt;organisation&gt;viaa\&quot; AND -dtag:\&quot;root&gt;organisation&gt;tempvrt\&quot;)&quot;]"/>
                     <http:query-param paramName="nrOfResults" value="#['${page.size}']"/>
                     <http:query-param paramName="startIndex" value="#[(flowVars.counter - 1) * '${page.size}']"/>
-                    <http:header headerName="Accept" value="application/xml"/>
-                    <http:header headerName="Authorization" value="${http.authorization}"/>
+                    <http:header headerName="Authorization" value="#[flowVars.authKey]"/>
             	</http:request-builder>
         	</http:request>
-            <mulexml:dom-to-xml-transformer doc:name="DOM to XML"/>
-            <set-variable variableName="temp" value="#[xpath3(&quot;//mediaDataList&quot;, payload, 'NODESET')]" doc:name="Variable"/>
-            <logger level="INFO" doc:name="Logger"/>
-            <foreach collection="#[flowVars.temp]" counterVariableName="innerCounter" doc:name="For Each">
-                <mulexml:dom-to-xml-transformer doc:name="DOM to XML"/>
-                <set-variable variableName="pid" value="#[xpath3(&quot;//mdProperty[attribute/text()='PID']/value/text()&quot;).equals(&quot;&quot;) ? xpath3(&quot;//originalFileName/text()&quot;).substring(0, 10) : xpath3(&quot;//mdProperty[attribute/text()='PID']/value/text()&quot;)]" doc:name="Set pid"/>
-                <logger message="#[&quot;PID: &quot; + flowVars.pid]" level="INFO" doc:name="Logger"/>
-                <set-variable variableName="dc_identifier_cpid" value="#[xpath3(&quot;//mdProperty[attribute/text()='dc_identifier_cpids']/value/attributeValueList[attribute/text()='dc_identifier_cpid']/value/text()&quot;).equals(&quot;&quot;) ? xpath3(&quot;//mdProperty[attribute/text()='original_carrier_id']/value/text()&quot;) : xpath3(&quot;//mdProperty[attribute/text()='dc_identifier_cpids']/value/attributeValueList[attribute/text()='dc_identifier_cpid']/value/text()&quot;)]" doc:name="Set dc_identifier_cpid"/>
-                <set-variable variableName="CreationDate" value="#[xpath3(&quot;//mdProperty[attribute/text()='CreationDate']/value/text()&quot;)]" doc:name="Set CreationDate"/>
-                <db:insert config-ref="POSTGRESQL_Connection" doc:name="Database">
-                    <db:parameterized-query><![CDATA[INSERT INTO ${db.table}(pid, dc_identifier_cpid, creationdate, correlation_id) VALUES(#[flowVars.pid], #[flowVars.dc_identifier_cpid], #[flowVars.CreationDate], #[flowVars.correlation_id]);]]></db:parameterized-query>
-                </db:insert>
+            <json:json-to-object-transformer doc:name="JSON to Object"/>
+            <foreach collection="#[payload.mediaDataList]" counterVariableName="innerCounter" doc:name="For Each mediaDataList">
+                <choice doc:name="Check status is FINISHED">
+                    <when expression="#[!payload.status.equals(&quot;FINISHED&quot;)]">
+                        <logger message="Status is not finished: #[payload]" level="WARN" doc:name="Not finished status"/>
+                    </when>
+                    <otherwise>
+                        <json:json-to-xml-transformer doc:name="JSON to XML"/>
+                        <set-variable variableName="pid" value="#[xpath3(&quot;//mdProperty[attribute/text()='PID']/value/text()&quot;).equals(&quot;&quot;) ? xpath3(&quot;//originalFileName/text()&quot;).substring(0, 10) : xpath3(&quot;//mdProperty[attribute/text()='PID']/value/text()&quot;)]" doc:name="Set pid"/>
+                        <logger message="#[&quot;PID: &quot; + flowVars.pid]" level="INFO" doc:name="Logger"/>
+                        <set-variable variableName="dc_identifier_cpid" value="#[xpath3(&quot;//mdProperty[attribute/text()='dc_identifier_cpids']/value/attributeValueList[attribute/text()='dc_identifier_cpid']/value/text()&quot;).equals(&quot;&quot;) ? xpath3(&quot;//mdProperty[attribute/text()='original_carrier_id']/value/text()&quot;) : xpath3(&quot;//mdProperty[attribute/text()='dc_identifier_cpids']/value/attributeValueList[attribute/text()='dc_identifier_cpid']/value/text()&quot;)]" doc:name="Set dc_identifier_cpid"/>
+                        <set-variable variableName="CreationDate" value="#[xpath3(&quot;//mdProperty[attribute/text()='CreationDate']/value/text()&quot;)]" doc:name="Set CreationDate"/>
+                        <db:insert config-ref="POSTGRESQL_Connection" doc:name="Insert into DB">
+                            <db:parameterized-query><![CDATA[INSERT INTO ${db.table}(pid, dc_identifier_cpid, creationdate, correlation_id) VALUES(#[flowVars.pid], #[flowVars.dc_identifier_cpid], #[flowVars.CreationDate], #[flowVars.correlation_id]);]]></db:parameterized-query>
+                        </db:insert>
+                    </otherwise>
+                </choice>
             </foreach>
         </foreach>
         <logger level="INFO" doc:name="Logger" message="#[flowVars.totalCount + &quot; rows were processed&quot;]"/>
-        <dw:transform-message doc:name="Transform Message">
+        <dw:transform-message doc:name="Build response">
             <dw:set-payload><![CDATA[%dw 1.0
 %output application/json
 ---
@@ -102,5 +106,6 @@ using (
         <set-variable variableName="dateTo" value="#[payload.datetime_to == null ? server.dateTime.format(&quot;YYYY-MM-dd'T'HH:mm:ss&quot;) : payload.datetime_to]" doc:name="Set dateTo"/>
         <set-variable variableName="tenant" value="#[payload.tenant == null ? null : payload.tenant]" doc:name="Set tenant"/>
         <set-variable variableName="currentTime" value="#[server.dateTime.format(&quot;YYYY_MM_dd_HH_mm_ss&quot;)]" doc:name="Set currentTime"/>
+        <set-variable variableName="authKey" value="${mediahavenapi.base64}" doc:name="Set authKey"/>
     </sub-flow>
 </mule>

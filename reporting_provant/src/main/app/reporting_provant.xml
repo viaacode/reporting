@@ -58,7 +58,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
     <sub-flow name="reporting_provantMain_Flow">
         <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
         <logger level="INFO" doc:name="Logger"/>
-        <flow-ref name="reporting_parser_init_vars" doc:name="reporting_parserSub_Flow"/>
+        <flow-ref name="reporting_parser_init_vars" doc:name="reporting_parser_init_vars"/>
         <logger level="INFO" doc:name="Logger"/>
         <db:select config-ref="POSTGRESQL_Connection" doc:name="Database">
             <db:parameterized-query><![CDATA[SELECT * FROM ${db.table} WHERE correlation_id = #[flowVars.correlation_id];]]></db:parameterized-query>

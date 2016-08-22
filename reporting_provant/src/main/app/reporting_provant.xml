@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:ftp="http://www.mulesoft.org/schema/mule/ee/ftp"
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:ftp="http://www.mulesoft.org/schema/mule/ee/ftp"
 	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
 	xmlns:db="http://www.mulesoft.org/schema/mule/db"
 	xmlns:mulexml="http://www.mulesoft.org/schema/mule/xml"
@@ -15,59 +15,38 @@ http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/
 http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/current/mule-amqp.xsd
 http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
 http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
-http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
-	<flow name="reporting_fomu" initialState="started">
-		<amqp:inbound-endpoint   	exchangeName="${rabbit.responseexchange}"
-									exchangeType="topic"
-									
-									exchangeDurable="true"
-									queueName="${rabbit.fomuqueue}"
-									queueDurable="true"
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+	<flow name="reporting_provant" initialState="started">
+		<amqp:inbound-endpoint   	
 									
 									
-									routingKey="${rabbit.fomuqueue}"
-									connector-ref="AMQP_0_9_Connector" doc:name="AMQP-0-9"/>
+									
+									queueName="reporting_responses_provant"
+									
+									
+									
+									
+									connector-ref="amqp_connector_provant" doc:name="AMQP-0-9" responseTimeout="10000"/>
 	        <flow-ref name="reporting_provantMain_Flow" doc:name="reporting_provantMain_Flow"/>
-	</flow>
-		<flow name="reporting_momu" initialState="started">
-		<amqp:inbound-endpoint   	exchangeName="${rabbit.responseexchange}"
-									exchangeType="topic"
-									
-									exchangeDurable="true"
-									queueName="${rabbit.momuqueue}"
-									queueDurable="true"
-									
-									
-									routingKey="${rabbit.momuqueue}"
-									connector-ref="AMQP_0_9_Connector" doc:name="AMQP-0-9"/>
-	        <flow-ref name="reporting_provantMain_Flow" doc:name="reporting_provantMain_Flow"/>
-	</flow>
-		<flow name="reporting_apa" initialState="started">
-		<amqp:inbound-endpoint   	exchangeName="${rabbit.responseexchange}"
-									exchangeType="topic"
-									
-									exchangeDurable="true"
-									queueName="${rabbit.apaqueue}"
-									queueDurable="true"
-									
-									
-									routingKey="${rabbit.apaqueue}"
-									connector-ref="AMQP_0_9_Connector" doc:name="AMQP-0-9"/>
-	        <flow-ref name="reporting_provantMain_Flow" doc:name="reporting_provantMain_Flow"/>
+        <amqp:acknowledge-message doc:name="AMQP-0-9 Acknowledge Message"/>
 	</flow>
     <sub-flow name="reporting_provantMain_Flow">
         <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
         <logger level="INFO" doc:name="Logger"/>
         <flow-ref name="reporting_parser_init_vars" doc:name="reporting_parser_init_vars"/>
         <logger level="INFO" doc:name="Logger"/>
-        <db:select config-ref="POSTGRESQL_Connection" doc:name="Database">
-            <db:parameterized-query><![CDATA[SELECT * FROM ${db.table} WHERE correlation_id = #[flowVars.correlation_id];]]></db:parameterized-query>
+        <db:select config-ref="POSTGRESQL_Connection" doc:name="Retrieve record with correlation id">
+            <db:parameterized-query><![CDATA[SELECT * 
+FROM reporting
+WHERE correlation_id = #[flowVars.correlation_id];]]></db:parameterized-query>
         </db:select>
         <logger level="INFO" doc:name="Logger"/>
         <flow-ref name="mapping_provant" doc:name="mapping_provant"/>
         <flow-ref name="delivery_provant" doc:name="delivery_provant"/>
-        <db:delete config-ref="POSTGRESQL_Connection" doc:name="Database">
-            <db:parameterized-query><![CDATA[DELETE FROM ${db.table} WHERE correlation_id = #[flowVars.correlation_id];]]></db:parameterized-query>
+        <db:delete config-ref="POSTGRESQL_Connection" doc:name="Remove record with correlation id">
+            <db:parameterized-query><![CDATA[DELETE FROM reporting 
+WHERE correlation_id = #[flowVars.correlation_id];]]></db:parameterized-query>
         </db:delete>
     </sub-flow>
 <sub-flow name="reporting_parser_init_vars">
@@ -90,7 +69,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 %output application/csv
 ---
 payload map {
-	Date: $.creationdate,
+	Date: $.archive_date,
 	PID: $.pid,
 	UUID: $.dc_identifier_cpid,
 	Status: 'OK'
@@ -105,7 +84,7 @@ payload map {
     </sub-flow>
     <sub-flow name="delivery_provant">
         <logger level="INFO" doc:name="Logger" message="RTV DELIVERY"/>
-        <foreach collection="#[payload.entrySet()]" doc:name="For Each">
+        <foreach collection="#[payload.entrySet()]" doc:name="For Each of output">
             <set-variable variableName="currentItem" value="#[payload.key]" doc:name="Set currentItem"/>
             <logger message="#[&quot;Processing &quot; + flowVars.currentItem]" level="INFO" doc:name="Logger"/>
             <set-payload value="#[payload.value]" doc:name="Set Payload"/>

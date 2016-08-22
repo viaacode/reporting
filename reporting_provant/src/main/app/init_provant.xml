@@ -16,24 +16,28 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
     	<receiver-threading-profile maxThreadsActive="1"/>
     </quartz:connector>
     
-    <flow name="init_rtvFlow" initialState="stopped">
-        <quartz:inbound-endpoint jobName="CustomJob" repeatInterval="${request.interval}" responseTimeout="10000" doc:name="Quartz" connector-ref="Quartz">
+    <flow name="init_rtvFlow" initialState="started">
+        <quartz:inbound-endpoint jobName="CustomJob" repeatInterval="86400000" responseTimeout="10000" doc:name="Fire every 24 hour e.g." connector-ref="Quartz" startDelay="6000">
         	<quartz:event-generator-job/>
         </quartz:inbound-endpoint>
+        <set-variable variableName="random"
+    value="#[new java.util.Random().nextInt(100)]" doc:name="Set random number for correlation_id" />
         <set-variable variableName="endDate" value="#[server.dateTime]" doc:name="Set endDate"/>
-        <set-variable variableName="startDate" value="#[flowVars.endDate.plusHours('${request.hoursinterval}')]" doc:name="Set startDate"/>
+        <set-variable variableName="temp" value="#[server.dateTime]" doc:name="Set temp (same as endDate, so not modifying endDate)"/>
+        <set-variable variableName="startDate" value="#[flowVars.temp.plusHours(-24)]" doc:name="Set startDate 24 hours ago"/>
+        <logger message="Build request for apa" level="INFO" doc:name="Build request for apa"/>
  
-        <dw:transform-message doc:name="Transform Message">
+        <dw:transform-message doc:name="Build reporting request for apa">
             <dw:set-payload><![CDATA[%dw 1.0
 %output application/json
 ---
 {
 
-    "correlation_id": "testrequest1",
+    "correlation_id": "apa" ++ "_" ++ flowVars.random,
 
-    "requestor": p('request.requestor'),
+    "requestor": "provant",
 
-    "tenant": p('request.tenant'),
+    "tenant": "apa",
 
     "datetime_from": flowVars.startDate as :string {format: "yyyy-MM-dd'T'HH:mm:ss"},
     
@@ -43,6 +47,73 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
         </dw:transform-message>
         <byte-array-to-string-transformer doc:name="Byte Array to String"/>
         
-        <amqp:outbound-endpoint exchangeName="${rabbit.exchangename}" responseTimeout="10000" exchange-pattern="request-response" connector-ref="AMQP_0_9_Connector" doc:name="AMQP-0-9"/>
+        <amqp:outbound-endpoint  responseTimeout="10000" exchange-pattern="request-response" connector-ref="amqp_connector_provant_send_requests" doc:name="Send request to reporting_requests" queueName="reporting_requests"/>
+        <logger message="Request sent for apa" level="INFO" doc:name="Request sent for apa"/>
+        <logger message="Build request for momu" level="INFO" doc:name="Build request for momu"/>
+        <dw:transform-message doc:name="Build reporting request for momu">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+
+    "correlation_id": "momu" ++ "_" ++ flowVars.random,
+
+    "requestor": "provant",
+
+    "tenant": "momu",
+
+    "datetime_from": flowVars.startDate as :string {format: "yyyy-MM-dd'T'HH:mm:ss"},
+    
+    "datetime_to": flowVars.endDate as :string {format: "yyyy-MM-dd'T'HH:mm:ss"}
+
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <byte-array-to-string-transformer doc:name="Byte Array to String"/>
+        <amqp:outbound-endpoint queueName="reporting_requests" responseTimeout="10000" exchange-pattern="request-response" connector-ref="amqp_connector_provant_send_requests" doc:name="Send request to reporting_requests"/>
+        <logger message="Request send for momu" level="INFO" doc:name="Request send for momu"/>
+        <logger message="Build request for fomu" level="INFO" doc:name="Build request for fomu"/>
+        <dw:transform-message doc:name="Build reporting request for fomu">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+
+    "correlation_id": "fomu" ++ "_" ++ flowVars.random,
+
+    "requestor": "provant",
+
+    "tenant": "fomu",
+
+    "datetime_from": flowVars.startDate as :string {format: "yyyy-MM-dd'T'HH:mm:ss"},
+    
+    "datetime_to": flowVars.endDate as :string {format: "yyyy-MM-dd'T'HH:mm:ss"}
+
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <byte-array-to-string-transformer doc:name="Byte Array to String"/>
+        <amqp:outbound-endpoint queueName="reporting_requests" responseTimeout="10000" exchange-pattern="request-response" connector-ref="amqp_connector_provant_send_requests" doc:name="Send request to reporting_requests"/>
+        <logger message="Request is sent for fomu" level="INFO" doc:name="Request is sent for fomu"/>
+        <logger message="Sent request for museumedelsmeedkunstjuwelenendiamant" level="INFO" doc:name="Sent request for museumedelsmeedkunstjuwelenendiamant"/>
+        <dw:transform-message doc:name="Build reporting request for museumedelsmeedkunstjuwelenendiamant">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+
+    "correlation_id": "museumedelsmeedkunstjuwelenendiamant" ++ "_" ++ flowVars.random,
+
+    "requestor": "provant",
+
+    "tenant": "museumedelsmeedkunstjuwelenendiamant",
+
+    "datetime_from": flowVars.startDate as :string {format: "yyyy-MM-dd'T'HH:mm:ss"},
+    
+    "datetime_to": flowVars.endDate as :string {format: "yyyy-MM-dd'T'HH:mm:ss"}
+
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <byte-array-to-string-transformer doc:name="Byte Array to String"/>
+        <logger message="Request is sent for museumedelsmeedkunstjuwelenendiamant" level="INFO" doc:name="Request is sent for museumedelsmeedkunstjuwelenendiamant"/>
+        <amqp:outbound-endpoint queueName="reporting_requests" responseTimeout="10000" exchange-pattern="request-response" connector-ref="amqp_connector_provant_send_requests" doc:name="Send request to reporting_requests"/>
     </flow>
 </mule>

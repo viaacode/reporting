@@ -1,0 +1,17 @@
+rabbit.host=
+rabbit.port=
+rabbit.username=
+rabbit.password=
+
+db.host=
+db.port=
+db.username=
+db.password=
+db.database=
+db.tablename_reporting=
+
+ftp.host=
+ftp.port=
+ftp.path=
+ftp.username=
+ftp.password=

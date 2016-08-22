@@ -10,6 +10,7 @@
 	<classpathentry kind="src" path="src/main/api"/>
 	<classpathentry kind="lib" path="src/main/resources/postgresql-9.4-1201.jdbc4.jar"/>
 	<classpathentry kind="con" path="MULE_LIB/AMQP-0-9/mule-transport-amqp-contribution"/>
+	<classpathentry kind="src" path="mappings"/>
 	<classpathentry kind="con" path="MULE_LIB/AMQPS-0-9/mule-transport-amqp-contribution"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

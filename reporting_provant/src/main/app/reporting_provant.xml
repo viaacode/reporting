@@ -27,7 +27,7 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 									
 									
 									
-									connector-ref="amqp_connector_provant" doc:name="AMQP-0-9" responseTimeout="10000"/>
+									connector-ref="amqp_connector_provant" doc:name="reporting_responses_provant" responseTimeout="10000"/>
 	        <flow-ref name="reporting_provantMain_Flow" doc:name="reporting_provantMain_Flow"/>
         <amqp:acknowledge-message doc:name="AMQP-0-9 Acknowledge Message"/>
 	</flow>

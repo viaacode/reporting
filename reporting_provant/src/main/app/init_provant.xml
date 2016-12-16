@@ -13,7 +13,7 @@ http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amq
 http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
 http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
 	<quartz:connector name="Quartz" validateConnections="true" doc:name="Quartz">
-    	<receiver-threading-profile maxThreadsActive="1"/>
+        <reconnect-forever/>
     </quartz:connector>
     
     <flow name="init_rtvFlow" initialState="started">
@@ -24,7 +24,7 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
     value="#[new java.util.Random().nextInt(100)]" doc:name="Set random number for correlation_id" />
         <set-variable variableName="endDate" value="#[server.dateTime]" doc:name="Set endDate"/>
         <set-variable variableName="temp" value="#[server.dateTime]" doc:name="Set temp (same as endDate, so not modifying endDate)"/>
-        <set-variable variableName="startDate" value="#[flowVars.temp.plusHours(-24)]" doc:name="Set startDate 24 hours ago"/>
+        <set-variable variableName="startDate" value="#[flowVars.temp.plusHours(-90)]" doc:name="Set startDate 24 hours ago"/>
         <logger message="Build request for apa" level="INFO" doc:name="Build request for apa"/>
  
         <dw:transform-message doc:name="Build reporting request for apa">

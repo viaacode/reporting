@@ -17,7 +17,9 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
     
    		<amqp:inbound-endpoint  queueName="reporting_requests"
 								queueDurable="true"		
-								connector-ref="AMQP_0_9_Connector" doc:name="Listening to reporting_requests" responseTimeout="10000"/>
+								connector-ref="AMQP_0_9_Connector" doc:name="Listening to reporting_requests" responseTimeout="10000">
+            <reconnect/>
+        </amqp:inbound-endpoint>
         <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
         <flow-ref name="initialize_variables" doc:name="initialize_variables"/>
         <dw:transform-message doc:name="Transform startDate and endDate to mediahaven date format">
@@ -88,8 +90,24 @@ using (
                                     <set-variable variableName="dc_identifier_cpid" value="#[payload['value']]" doc:name="Set dc_identifier_cpid"/>
                                 </otherwise>
                             </choice>
-                            <choice doc:name="Is dc_identifier_cpids?">
-                                <when expression="#[!payload['attribute'].equals('dc_identifier_cpids')]">
+                            <choice doc:name="Is dc_identifier_localid?">
+                                <when expression="#[!payload['attribute'].equals('dc_identifier_localid')]">
+                                    <logger level="INFO" doc:name="Nope"/>
+                                </when>
+                                <otherwise>
+                                    <set-variable variableName="dc_identifier_cpid" value="#[payload['value']]" doc:name="Set dc_identifier_cpid"/>
+                                </otherwise>
+                            </choice>
+                            <choice doc:name="Is dc_identifier_cpids and no cpid already found?">
+                                <when expression="#[flowVars.dc_identifier_cpid != null || !payload['attribute'].equals('dc_identifier_cpids')]">
+                                    <logger level="INFO" doc:name="Logger"/>
+                                </when>
+                                <otherwise>
+                                    <set-variable variableName="dc_identifier_cpid" value="#[payload['value']['attributeValueList'][0]['value']]" doc:name="Set dc_identifier_cpid with first value"/>
+                                </otherwise>
+                            </choice>
+                            <choice doc:name="Is dc_identifier_localids?">
+                                <when expression="#[flowVars.dc_identifier_cpid != null || !payload['attribute'].equals('dc_identifier_localids')]">
                                     <logger level="INFO" doc:name="Logger"/>
                                 </when>
                                 <otherwise>

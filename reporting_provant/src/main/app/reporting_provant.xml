@@ -17,6 +17,7 @@ http://www.springframework.org/schema/beans http://www.springframework.org/schem
 http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
 http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <ftp:connector name="FTP" pollingFrequency="1000" validateConnections="true" doc:name="FTP"/>
 	<flow name="reporting_provant" initialState="started">
 		<amqp:inbound-endpoint   	
 									
@@ -88,7 +89,9 @@ payload map {
             <set-variable variableName="currentItem" value="#[payload.key]" doc:name="Set currentItem"/>
             <logger message="#[&quot;Processing &quot; + flowVars.currentItem]" level="INFO" doc:name="Logger"/>
             <set-payload value="#[payload.value]" doc:name="Set Payload"/>
-            <ftp:outbound-endpoint host="${ftp.host}" port="${ftp.port}" path="${ftp.path}" user="${ftp.username}" password="${ftp.password}" outputPattern="#[server.dateTime.format(&quot;YYYYMMdd'T'HHmmss&quot;) + &quot;_&quot; + (flowVars.currentItem.dc_identifier_cpid.equals(&quot;&quot;) ? flowVars.counter : flowVars.currentItem.dc_identifier_cpid) + &quot;_&quot; + flowVars.currentItem.pid + &quot;.csv&quot;]" responseTimeout="10000" doc:name="FTP"/>
+            <ftp:outbound-endpoint host="${ftp.host}" port="${ftp.port}" path="${ftp.path}" user="${ftp.username}" password="${ftp.password}" outputPattern="#[server.dateTime.format(&quot;YYYYMMdd'T'HHmmss&quot;) + &quot;_&quot; + (flowVars.currentItem.dc_identifier_cpid.equals(&quot;&quot;) ? flowVars.counter : flowVars.currentItem.dc_identifier_cpid) + &quot;_&quot; + flowVars.currentItem.pid + &quot;.csv&quot;]" responseTimeout="10000" doc:name="FTP" connector-ref="FTP">
+                <reconnect/>
+            </ftp:outbound-endpoint>
         </foreach>
         <logger level="INFO" doc:name="Logger"/>
     </sub-flow>

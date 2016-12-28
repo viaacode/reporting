@@ -64,7 +64,7 @@ WHERE correlation_id = #[flowVars.correlation_id];]]></db:parameterized-query>
             <set-variable variableName="currentRow" value="#[payload]" doc:name="Set currentRow"/>
             <set-payload value="#[new java.util.LinkedList()]" doc:name="Set Payload"/>
             <expression-component doc:name="Expression"><![CDATA[#[payload.add(flowVars.currentRow)]]]></expression-component>
-            <dw:transform-message doc:name="Transform Message">
+            <dw:transform-message doc:name="Build csv">
                 <dw:input-payload doc:sample="list_map.dwl"/>
                 <dw:set-payload><![CDATA[%dw 1.0
 %output application/csv
@@ -79,6 +79,48 @@ payload map {
             <object-to-string-transformer doc:name="Object to String"/>
             <logger level="INFO" doc:name="Logger"/>
             <expression-component doc:name="Expression"><![CDATA[#[flowVars.output.put(flowVars.currentRow, payload)]]]></expression-component>
+            <dw:transform-message doc:name="Build move request for zip">
+                <dw:input-variable variableName="currentItem"/>
+                <dw:set-payload><![CDATA[%dw 1.0
+	%input payload application/java
+	%output application/json
+	---
+	{
+		"source_name": payload[0].dc_identifier_cpid ++ '.zip',
+		"destination_name": payload[0].dc_identifier_cpid ++ '.zip',
+		"source_path": p('ftp.path.processing'),
+		"destination_path": p('ftp.path.processed'),
+	    "host": p('ftp.host'),
+	    "username": p('ftp.username'),
+	    "password": p('ftp.password'),
+	    "correlation_id": ""
+	}]]></dw:set-payload>
+            </dw:transform-message>
+            <byte-array-to-string-transformer doc:name="Byte Array to String"/>
+            <amqp:outbound-endpoint queueName="move_requests" responseTimeout="10000" connector-ref="amqp_connector_provant" doc:name="Send message to move_requests">
+                <reconnect/>
+            </amqp:outbound-endpoint>
+            <dw:transform-message doc:name="Build move request for sidecar">
+                <dw:input-variable variableName="currentItem"/>
+                <dw:set-payload><![CDATA[%dw 1.0
+	%input payload application/java
+	%output application/json
+	---
+	{
+		"source_name": payload[0].dc_identifier_cpid ++ '.xml',
+		"destination_name": payload[0].dc_identifier_cpid ++ '.xml',
+		"source_path": p('ftp.path.processing'),
+		"destination_path": p('ftp.path.processed'),
+	    "host": p('ftp.host'),
+	    "username": p('ftp.username'),
+	    "password": p('ftp.password'),
+	    "correlation_id": ""
+	}]]></dw:set-payload>
+            </dw:transform-message>
+            <byte-array-to-string-transformer doc:name="Byte Array to String"/>
+            <amqp:outbound-endpoint queueName="move_requests" responseTimeout="10000" connector-ref="amqp_connector_provant" doc:name="Send message to move_requests">
+                <reconnect/>
+            </amqp:outbound-endpoint>
         </foreach>
         <set-payload value="#[flowVars.output]" doc:name="Set Payload"/>
         <logger level="INFO" doc:name="Logger"/>

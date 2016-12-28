@@ -12,6 +12,8 @@ db.tablename_reporting=
 
 ftp.host=
 ftp.port=
-ftp.path=
 ftp.username=
 ftp.password=
+ftp.path.reporting=
+ftp.path.processing=
+ftp.path.completed=

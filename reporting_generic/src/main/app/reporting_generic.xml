@@ -14,10 +14,7 @@ http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/cu
 http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
 http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
     <flow name="ingest_reportingFlow">
-    
-   		<amqp:inbound-endpoint  queueName="reporting_requests"
-								queueDurable="true"		
-								connector-ref="AMQP_0_9_Connector" doc:name="Listening to reporting_requests" responseTimeout="10000">
+        <amqp:inbound-endpoint queueName="reporting_requests" responseTimeout="10000" exchange-pattern="request-response" connector-ref="AMQP_0_9_Connector" doc:name="reporting_requests">
             <reconnect/>
         </amqp:inbound-endpoint>
         <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
@@ -149,7 +146,7 @@ VALUES(#[flowVars.pid], #[flowVars.dc_identifier_cpid], #[flowVars.archiveDate],
                 <set-variable variableName="routingKey" value="#[&quot;&quot;]" doc:name="Set routingKey empty"/>
             </otherwise>
         </choice>
-        <amqp:outbound-endpoint exchangeName="${rabbit.jobexchange}" exchangeType="fanout" responseTimeout="10000" connector-ref="AMQP_0_9_Connector" doc:name="AMQP-0-9" routingKey="#[flowVars.routingKey]" exchangeDurable="true"/>
+        <amqp:outbound-endpoint exchangeName="${rabbit.jobexchange}" exchangeType="fanout" responseTimeout="10000" connector-ref="send_responses" doc:name="Send reponse" routingKey="#[flowVars.routingKey]" exchangeDurable="true"/>
         <amqp:acknowledge-message doc:name="AMQP-0-9 Acknowledge Message"/>
     </flow>
     <sub-flow name="initialize_variables">

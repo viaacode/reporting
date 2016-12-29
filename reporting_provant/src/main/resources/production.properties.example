@@ -16,4 +16,4 @@ ftp.username=
 ftp.password=
 ftp.path.reporting=
 ftp.path.processing=
-ftp.path.completed=
+ftp.path.processed=

@@ -86,8 +86,8 @@ payload map {
 	%output application/json
 	---
 	{
-		"source_name": payload[0].dc_identifier_cpid ++ '.zip',
-		"destination_name": payload[0].dc_identifier_cpid ++ '.zip',
+		"source_name": flowVars.currentRow['dc_identifier_cpid'] ++ '.zip',
+		"destination_name": flowVars.currentRow['dc_identifier_cpid'] ++ '.zip',
 		"source_path": p('ftp.path.processing'),
 		"destination_path": p('ftp.path.processed'),
 	    "host": p('ftp.host'),
@@ -107,8 +107,8 @@ payload map {
 	%output application/json
 	---
 	{
-		"source_name": payload[0].dc_identifier_cpid ++ '.xml',
-		"destination_name": payload[0].dc_identifier_cpid ++ '.xml',
+		"source_name": flowVars.currentRow['dc_identifier_cpid'] ++ '.xml',
+		"destination_name": flowVars.currentRow['dc_identifier_cpid'] ++ '.xml',
 		"source_path": p('ftp.path.processing'),
 		"destination_path": p('ftp.path.processed'),
 	    "host": p('ftp.host'),
@@ -131,7 +131,7 @@ payload map {
             <set-variable variableName="currentItem" value="#[payload.key]" doc:name="Set currentItem"/>
             <logger message="#[&quot;Processing &quot; + flowVars.currentItem]" level="INFO" doc:name="Logger"/>
             <set-payload value="#[payload.value]" doc:name="Set Payload"/>
-            <ftp:outbound-endpoint host="${ftp.host}" port="${ftp.port}" path="${ftp.path}" user="${ftp.username}" password="${ftp.password}" outputPattern="#[server.dateTime.format(&quot;YYYYMMdd'T'HHmmss&quot;) + &quot;_&quot; + (flowVars.currentItem.dc_identifier_cpid.equals(&quot;&quot;) ? flowVars.counter : flowVars.currentItem.dc_identifier_cpid) + &quot;_&quot; + flowVars.currentItem.pid + &quot;.csv&quot;]" responseTimeout="10000" doc:name="FTP" connector-ref="FTP">
+            <ftp:outbound-endpoint host="${ftp.host}" port="${ftp.port}" path="${ftp.path.reporting}" user="${ftp.username}" password="${ftp.password}" outputPattern="#[server.dateTime.format(&quot;YYYYMMdd'T'HHmmss&quot;) + &quot;_&quot; + (flowVars.currentItem.dc_identifier_cpid.equals(&quot;&quot;) ? flowVars.counter : flowVars.currentItem.dc_identifier_cpid) + &quot;_&quot; + flowVars.currentItem.pid + &quot;.csv&quot;]" responseTimeout="10000" doc:name="FTP" connector-ref="FTP">
                 <reconnect/>
             </ftp:outbound-endpoint>
         </foreach>

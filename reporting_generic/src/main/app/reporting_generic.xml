@@ -36,7 +36,7 @@ using (
         </dw:transform-message>
         <set-variable variableName="startDate" value="#[payload.startDate]" doc:name="Set startDate"/>
         <set-variable variableName="endDate" value="#[payload.endDate]" doc:name="Set endDate"/>
-        <set-variable variableName="query" value="#[&quot;+(MediaObjectArchiveDate:[&quot; + flowVars.startDate + &quot; TO &quot; + flowVars.endDate + &quot;] AND MediaObjectFragmentisiningestspace:*)+(dtag:\&quot;root&gt;organisation&gt;&quot; + flowVars.tenant + &quot;\&quot;)&quot;]" doc:name="Set query"/>
+        <set-variable variableName="query" value="#[&quot;+(MediaObjectArchiveDate:[&quot; + flowVars.startDate + &quot; TO &quot; + flowVars.endDate + &quot;] AND MediaObjectFragmentisiningestspace:*)+(MediaObjectFragmentDepartmentName&quot; + &quot;:&quot; + flowVars.tenant + &quot;)&quot;]" doc:name="Set query"/>
         <http:request config-ref="HTTP_Request_Configuration" path="resources/media/" method="GET" doc:name="Request Mediahaven">
             <http:request-builder>
                 <http:query-param paramName="q" value="#[flowVars.query]"/>

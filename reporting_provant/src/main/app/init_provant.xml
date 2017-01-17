@@ -24,7 +24,7 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
     value="#[new java.util.Random().nextInt(100)]" doc:name="Set random number for correlation_id" />
         <set-variable variableName="endDate" value="#[server.dateTime]" doc:name="Set endDate"/>
         <set-variable variableName="temp" value="#[server.dateTime]" doc:name="Set temp (same as endDate, so not modifying endDate)"/>
-        <set-variable variableName="startDate" value="#[flowVars.temp.plusHours(-90)]" doc:name="Set startDate 24 hours ago"/>
+        <set-variable variableName="startDate" value="#[flowVars.temp.plusHours(-24)]" doc:name="Set startDate 24 hours ago"/>
         <logger message="Build request for apa" level="INFO" doc:name="Build request for apa"/>
  
         <dw:transform-message doc:name="Build reporting request for apa">
@@ -39,9 +39,9 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 
     "tenant": "apa",
 
-    "datetime_from": flowVars.startDate as :string {format: "yyyy-MM-dd'T'HH:mm:ss"},
+    "datetime_from": flowVars.startDate as :string {format: "yyyy:MM:dd HH:mm:ss"},
     
-    "datetime_to": flowVars.endDate as :string {format: "yyyy-MM-dd'T'HH:mm:ss"}
+    "datetime_to": flowVars.endDate as :string {format: "yyyy:MM:dd HH:mm:ss"}
 
 }]]></dw:set-payload>
         </dw:transform-message>
@@ -62,9 +62,9 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 
     "tenant": "momu",
 
-    "datetime_from": flowVars.startDate as :string {format: "yyyy-MM-dd'T'HH:mm:ss"},
+    "datetime_from": flowVars.startDate as :string {format: "yyyy:MM:dd HH:mm:ss"},
     
-    "datetime_to": flowVars.endDate as :string {format: "yyyy-MM-dd'T'HH:mm:ss"}
+    "datetime_to": flowVars.endDate as :string {format: "yyyy:MM:dd HH:mm:ss"}
 
 }]]></dw:set-payload>
         </dw:transform-message>
@@ -84,9 +84,9 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 
     "tenant": "fomu",
 
-    "datetime_from": flowVars.startDate as :string {format: "yyyy-MM-dd'T'HH:mm:ss"},
+    "datetime_from": flowVars.startDate as :string {format: "yyyy:MM:dd HH:mm:ss"},
     
-    "datetime_to": flowVars.endDate as :string {format: "yyyy-MM-dd'T'HH:mm:ss"}
+    "datetime_to": flowVars.endDate as :string {format: "yyyy:MM:dd HH:mm:ss"}
 
 }]]></dw:set-payload>
         </dw:transform-message>
@@ -106,9 +106,9 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 
     "tenant": "museumedelsmeedkunstjuwelenendiamant",
 
-    "datetime_from": flowVars.startDate as :string {format: "yyyy-MM-dd'T'HH:mm:ss"},
+    "datetime_from": flowVars.startDate as :string {format: "yyyy:MM:dd HH:mm:ss"},
     
-    "datetime_to": flowVars.endDate as :string {format: "yyyy-MM-dd'T'HH:mm:ss"}
+    "datetime_to": flowVars.endDate as :string {format: "yyyy:MM:dd HH:mm:ss"}
 
 }]]></dw:set-payload>
         </dw:transform-message>

@@ -25,30 +25,6 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
         <set-variable variableName="endDate" value="#[server.dateTime]" doc:name="Set endDate"/>
         <set-variable variableName="temp" value="#[server.dateTime]" doc:name="Set temp (same as endDate, so not modifying endDate)"/>
         <set-variable variableName="startDate" value="#[flowVars.temp.plusHours(-24)]" doc:name="Set startDate 24 hours ago"/>
-        <logger message="Build request for apa" level="INFO" doc:name="Build request for apa"/>
- 
-        <dw:transform-message doc:name="Build reporting request for apa">
-            <dw:set-payload><![CDATA[%dw 1.0
-%output application/json
----
-{
-
-    "correlation_id": "apa" ++ "_" ++ flowVars.random,
-
-    "requestor": "provant",
-
-    "tenant": "apa",
-
-    "datetime_from": flowVars.startDate as :string {format: "yyyy:MM:dd HH:mm:ss"},
-    
-    "datetime_to": flowVars.endDate as :string {format: "yyyy:MM:dd HH:mm:ss"}
-
-}]]></dw:set-payload>
-        </dw:transform-message>
-        <byte-array-to-string-transformer doc:name="Byte Array to String"/>
-        
-        <amqp:outbound-endpoint  responseTimeout="10000" exchange-pattern="request-response" connector-ref="amqp_connector_provant_send_requests" doc:name="Send request to reporting_requests" queueName="reporting_requests"/>
-        <logger message="Request sent for apa" level="INFO" doc:name="Request sent for apa"/>
         <logger message="Build request for momu" level="INFO" doc:name="Build request for momu"/>
         <dw:transform-message doc:name="Build reporting request for momu">
             <dw:set-payload><![CDATA[%dw 1.0
@@ -93,7 +69,7 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
         <byte-array-to-string-transformer doc:name="Byte Array to String"/>
         <amqp:outbound-endpoint queueName="reporting_requests" responseTimeout="10000" exchange-pattern="request-response" connector-ref="amqp_connector_provant_send_requests" doc:name="Send request to reporting_requests"/>
         <logger message="Request is sent for fomu" level="INFO" doc:name="Request is sent for fomu"/>
-        <logger message="Sent request for museumedelsmeedkunstjuwelenendiamant" level="INFO" doc:name="Sent request for museumedelsmeedkunstjuwelenendiamant"/>
+        <logger message="Sent request for museumedelsmeedkunstjuwelenendiamant" level="INFO" doc:name="Sent request for museumedelsmeedkunstjuwelenendiamant (diva)"/>
         <dw:transform-message doc:name="Build reporting request for museumedelsmeedkunstjuwelenendiamant">
             <dw:set-payload><![CDATA[%dw 1.0
 %output application/json

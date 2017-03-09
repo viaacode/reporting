@@ -52,11 +52,8 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
         	</http:request>
             <json:json-to-object-transformer doc:name="JSON to HashMap" returnClass="java.util.HashMap"/>
             <foreach collection="#[payload['mediaDataList']]" counterVariableName="innerCounter" doc:name="For Each mediaDataList">
-                <choice doc:name="Check status is FINISHED">
-                    <when expression="#[!payload.status.equals(&quot;FINISHED&quot;)]">
-                        <logger message="Status is not finished: #[payload]" level="WARN" doc:name="Not finished status"/>
-                    </when>
-                    <otherwise>
+                <choice doc:name="Check archive_status on_tape or on_disk?">
+                    <when expression="#[payload.archive_status.equals(&quot;on_tape&quot;) || payload.archive_status.equals(&quot;on_disk&quot;)]">
                         <set-variable variableName="pid" value="#[payload['externalId']]" doc:name="Set pid"/>
                         <logger message="#[&quot;PID: &quot; + flowVars.pid]" level="INFO" doc:name="Logger"/>
                         <set-variable variableName="archiveDate" value="#[payload['archiveDate']]" doc:name="Set archiveDate"/>
@@ -100,6 +97,9 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 (pid, dc_identifier_cpid, archive_date, correlation_id) 
 VALUES(#[flowVars.pid], #[flowVars.dc_identifier_cpid], #[flowVars.archiveDate], #[flowVars.correlation_id]);]]></db:parameterized-query>
                         </db:insert>
+                    </when>
+                    <otherwise>
+                        <logger message="Status is not finished: #[payload]" level="WARN" doc:name="Not finished status"/>
                     </otherwise>
                 </choice>
             </foreach>

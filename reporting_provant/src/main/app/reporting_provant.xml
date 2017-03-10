@@ -79,7 +79,7 @@ payload map {
             <object-to-string-transformer doc:name="Object to String"/>
             <logger level="INFO" doc:name="Logger"/>
             <expression-component doc:name="Expression"><![CDATA[#[flowVars.output.put(flowVars.currentRow, payload)]]]></expression-component>
-            <dw:transform-message doc:name="Build move request for zip">
+            <dw:transform-message doc:name="Build move request for zip to Processed (there will listen a garbage collector)">
                 <dw:input-variable variableName="currentItem"/>
                 <dw:set-payload><![CDATA[%dw 1.0
 	%input payload application/java
@@ -119,6 +119,26 @@ payload map {
             </dw:transform-message>
             <byte-array-to-string-transformer doc:name="Byte Array to String"/>
             <amqp:outbound-endpoint queueName="move_requests" responseTimeout="10000" connector-ref="amqp_connector_provant" doc:name="Send message to move_requests">
+                <reconnect/>
+            </amqp:outbound-endpoint>
+            
+            <dw:transform-message doc:name="Build delete request for unzipped folder">
+                <dw:input-variable variableName="currentItem"/>
+                <dw:set-payload><![CDATA[%dw 1.0
+	%input payload application/java
+	%output application/json
+	---	
+{
+	"file_name": flowVars.currentRow['dc_identifier_cpid'],
+	"file_path":  p('ftp.path.processing'),
+	"host": p('ftp.host'),
+	"username": p('ftp.username'),
+	"password": p('ftp.password'),
+	"correlation_id": ""
+}]]></dw:set-payload>
+            </dw:transform-message>
+            <byte-array-to-string-transformer doc:name="Byte Array to String"/>
+            <amqp:outbound-endpoint queueName="delete_requests" responseTimeout="10000" connector-ref="amqp_connector_provant" doc:name="Send message to delete_requests">
                 <reconnect/>
             </amqp:outbound-endpoint>
         </foreach>

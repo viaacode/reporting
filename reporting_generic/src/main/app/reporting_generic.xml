@@ -53,7 +53,7 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
             <json:json-to-object-transformer doc:name="JSON to HashMap" returnClass="java.util.HashMap"/>
             <foreach collection="#[payload['mediaDataList']]" counterVariableName="innerCounter" doc:name="For Each mediaDataList">
                 <choice doc:name="Check archive_status on_tape or on_disk?">
-                    <when expression="#[payload.archive_status.equals(&quot;on_tape&quot;) || payload.archive_status.equals(&quot;on_disk&quot;)]">
+                    <when expression="#[payload.archiveStatus.equals(&quot;on_tape&quot;) || payload.archiveStatus.equals(&quot;on_disk&quot;)]">
                         <set-variable variableName="pid" value="#[payload['externalId']]" doc:name="Set pid"/>
                         <logger message="#[&quot;PID: &quot; + flowVars.pid]" level="INFO" doc:name="Logger"/>
                         <set-variable variableName="archiveDate" value="#[payload['archiveDate']]" doc:name="Set archiveDate"/>
